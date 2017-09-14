@@ -64,6 +64,8 @@ class XmlParser():
                 return
             elif(byte=='/'):
                 self.endTag(file,parent.parent)
+            elif(byte=="!"):
+                self.ignoreNote(file,parent)
             s=byte
         else:
             byte = has
@@ -124,8 +126,13 @@ class XmlParser():
                 return
             if (byte == "/"):
                 self.endTag(file, parent)
+            elif(byte=="!"):
+                self.ignoreNote(file, parent)
             else:
                 self.beginTag(file, me, byte)
+
+
+
 
     def endTag(self,file, parent):
         byte = file.read(1)
@@ -142,6 +149,7 @@ class XmlParser():
 
         tag=self.tagStack.pop()
         if(s.find(tag)<0):
+            file.close()
             raise  Exception("Tag Unmatched!",self.tag_Unmatched_Error%(tag,s))
         else:
             self.beginTag(file, parent)
@@ -157,7 +165,27 @@ class XmlParser():
             pass
 
     def raiseAttributeError(self,file,attr):
+        file.close()
         raise  Exception("Attribute formate Error!",self.attr_Error%attr)
+
+    def ignoreNote(self, file, parent):
+        byte = file.read(1)
+        s = byte
+        if (byte == ""):
+            self.tryRaiseTagError(file)
+            return
+        while (byte != ">" and byte != ""):
+            byte = file.read(1)
+            s += byte
+        print s
+        if (byte == ""):
+            self.tryRaiseTagError(file)
+            return
+        if (s.startswith("--") == False or s.endswith("-->") == False):
+            file.close()
+            raise Exception("Note formate Error :""<%s""" % s)
+        else:
+            self.beginTag(file, parent)
 
     def ignoreWhiteSpace(self,file, byte):
         if (byte == ""):
